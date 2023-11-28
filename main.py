@@ -3,10 +3,17 @@
 '''
 1. open file
 2. scan all strings
-3. find doxygen patterns
-4. change strings
-5. save file
-6. close file
+3. !!! find doxygen patterns and change strings
+4. save file
+5. close file
+
+
+
+3.1 find /** string part
+3.2 detect block type 
+if block contains \file tag - it is header (skip block)
+else - format strings with tags
+3.3 if detected */ - clear block flag
 '''
 
 import argparse
@@ -17,13 +24,38 @@ import sys
 import zipfile
 import struct
 import shutil
+import enum
+from dataclasses import dataclass
+
+@dataclass
+class CommentDescriptor:
+    block_type: str
+    is_block_opened: bool = False
+    is_block_closed: bool = False
+
+    def __init__(self, block_type: str, is_block_opened: bool, is_block_closed: bool = 0):
+        self.block_type = block_type
+        self.is_block_opened = is_block_opened
+        self.is_block_closed = is_block_closed
+
+
+class CommentBlockType(enum.Enum):
+    GENERAL = 0
+    HEADER = 1
+    FUNCTION = 2
 
 DOXY_BRIEF = '* \\brief'
 DOXY_NOTE = '* \\note'
 DOXY_PARAM = "* \\param"
 DOXY_RETURN = '* \\return'
 DOXY_RESULT = '* \\result'
+DOXY_DETAILS = '* \\result'
+DOXY_FILE = '* \\file'
+DOXY_AUTHOR = '* \\author'
+OPEN_COMMENT = '/**'
+CLOSE_COMMENT = '*/'
 
+tags = [DOXY_BRIEF, DOXY_NOTE, DOXY_PARAM, DOXY_RETURN, DOXY_RESULT, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR]
 
 def find_by_mask(mask: str) -> None:
     iter = glob(mask, recursive=False)
@@ -32,6 +64,21 @@ def find_by_mask(mask: str) -> None:
         print(element)
         #os.remove(element)
 
+
+
+def lines_processing(line: str) -> None:
+    for tag in tags:
+        if line.find(tag.strip()) != -1:
+            pass
+            
+def tag_processing(tag: str) -> None:
+    pass
+    
+    '''
+    switch tag:
+    case: 
+    
+    '''
 
 def main():
     print("run main()")
@@ -55,6 +102,9 @@ def main():
         for line in file:
             if line.find(DOXY_PARAM.strip()) != -1:
                 print(line.strip())
+
+                lines_processing(line)
+
             #   print(type(line.strip()))
             #print(line.strip())
             #print(type(line.strip()))
