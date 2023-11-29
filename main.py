@@ -26,18 +26,18 @@ import struct
 import shutil
 import enum
 from dataclasses import dataclass
+from typing import Optional
 
 @dataclass
 class CommentDescriptor:
     block_type: str
-    is_block_opened: bool = False
-    is_block_closed: bool = False
+    is_block_opened: bool
+    is_block_closed: bool
 
-    def __init__(self, block_type: str, is_block_opened: bool, is_block_closed: bool = 0):
+    def __init__(self, block_type: str, is_block_opened: bool, is_block_closed: bool = False):
         self.block_type = block_type
         self.is_block_opened = is_block_opened
         self.is_block_closed = is_block_closed
-
 
 class CommentBlockType(enum.Enum):
     GENERAL = 0
@@ -48,37 +48,36 @@ DOXY_BRIEF = '* \\brief'
 DOXY_NOTE = '* \\note'
 DOXY_PARAM = "* \\param"
 DOXY_RETURN = '* \\return'
-DOXY_RESULT = '* \\result'
-DOXY_DETAILS = '* \\result'
+DOXY_RETVAL = '* \\retval'
+DOXY_DETAILS = '* \\details'
 DOXY_FILE = '* \\file'
 DOXY_AUTHOR = '* \\author'
 OPEN_COMMENT = '/**'
 CLOSE_COMMENT = '*/'
 
-tags = [DOXY_BRIEF, DOXY_NOTE, DOXY_PARAM, DOXY_RETURN, DOXY_RESULT, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR]
+tags = [DOXY_BRIEF, DOXY_NOTE, DOXY_PARAM, DOXY_RETURN, DOXY_RETVAL, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR]
 
-def find_by_mask(mask: str) -> None:
-    iter = glob(mask, recursive=False)
-    print(iter)
-    for element in iter:
-        print(element)
-        #os.remove(element)
-
-
-
-def lines_processing(line: str) -> None:
+def line_processing(line: str) -> Optional[str]:
     for tag in tags:
         if line.find(tag.strip()) != -1:
-            pass
+            return tag_processing(tag, line)
+    return None
             
-def tag_processing(tag: str) -> None:
-    pass
+def tag_processing(tag: str, line: str) -> Optional[str]:
     
-    '''
-    switch tag:
-    case: 
+    if tag == OPEN_COMMENT:
+        return None
     
-    '''
+    if tag == CLOSE_COMMENT:
+        return None
+    
+    if tag == DOXY_PARAM:
+        buffer = str.split
+        return buffer[0]
+    
+    if tag == DOXY_RETVAL:
+        return None
+    
 
 def main():
     print("run main()")
@@ -95,22 +94,16 @@ def main():
 
     args = parser.parse_args()
 
-
     with open(args.input_file, "r+") as file:
 
-        #lines = [line for line in file]
+        #TODO lines = [line for line in file]
         for line in file:
-            if line.find(DOXY_PARAM.strip()) != -1:
-                print(line.strip())
-
-                lines_processing(line)
-
-            #   print(type(line.strip()))
-            #print(line.strip())
-            #print(type(line.strip()))
-
-            #print(str(line))
-            #print(str(type(line)))
+            print(line.strip())
+            formatted_line = line_processing(line)
+            if formatted_line != None:
+                #file.write(formatted_line)
+                print('DEBUG: NEW LINE:')
+                print(formatted_line)
 
     file.close()
 
