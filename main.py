@@ -55,6 +55,10 @@ DOXY_AUTHOR = '* \\author'
 OPEN_COMMENT = '/**'
 CLOSE_COMMENT = '*/'
 
+alignment_star = 10
+alignment_tag = 10
+alignment_description = 10
+
 tags = [DOXY_BRIEF, DOXY_NOTE, DOXY_PARAM, DOXY_RETURN, DOXY_RETVAL, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR]
 
 def line_processing(line: str) -> Optional[str]:
@@ -72,10 +76,14 @@ def tag_processing(tag: str, line: str) -> Optional[str]:
         return None
     
     if tag == DOXY_PARAM:
-        buffer = str.split
-        return buffer[0]
+        buffer = line.split()
+        print(buffer)
+        print(f'{buffer[0]:{alignment_star}}{buffer[1]:{alignment_tag}}{buffer[2]:{alignment_description}}')
+        return None
     
     if tag == DOXY_RETVAL:
+        buffer = line.split()
+        print(buffer)
         return None
     
 
