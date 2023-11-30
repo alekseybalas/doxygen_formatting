@@ -61,6 +61,11 @@ alignment_description = 10
 
 tags = [DOXY_BRIEF, DOXY_NOTE, DOXY_PARAM, DOXY_RETURN, DOXY_RETVAL, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR]
 
+def doxy_brief_handler() -> None:
+    print('DEBUG: doxy_brief_handler')
+
+handlers = {DOXY_BRIEF : doxy_brief_handler}
+
 def line_processing(line: str) -> Optional[str]:
     for tag in tags:
         if line.find(tag.strip()) != -1:
@@ -82,10 +87,11 @@ def tag_processing(tag: str, line: str) -> Optional[str]:
         return None
     
     if tag == DOXY_RETVAL:
-        buffer = line.split()
-        print(buffer)
         return None
     
+    if tag == DOXY_BRIEF:
+        handlers[tag]()
+        return None
 
 def main():
     print("run main()")
