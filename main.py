@@ -27,22 +27,40 @@ import shutil
 import enum
 from dataclasses import dataclass
 from typing import Optional
+from abc import ABCMeta, abstractmethod 
 
-@dataclass
-class CommentDescriptor:
-    block_type: str
-    is_block_opened: bool
-    is_block_closed: bool
-
-    def __init__(self, block_type: str, is_block_opened: bool, is_block_closed: bool = False):
-        self.block_type = block_type
-        self.is_block_opened = is_block_opened
-        self.is_block_closed = is_block_closed
+#TODO: try to use https://pypi.org/project/transitions/ https://github.com/pytransitions/transitions
 
 class CommentBlockType(enum.Enum):
     GENERAL = 0
     HEADER = 1
     FUNCTION = 2
+    UNDEFINED = 3
+
+@dataclass
+class CommentDescriptor:
+    block_type: CommentBlockType
+    is_block_opened: bool
+    #is_block_closed: bool
+
+@dataclass
+class AlligmentDescriptor:
+    star: int
+    tag: int
+    descr: int
+
+
+'''
+TODO: investigate function prototypes
+@abstractmethod 
+def doxy_brief_handler():
+    pass 
+
+'''
+
+
+cmnt_descr = CommentDescriptor(
+    CommentBlockType.UNDEFINED, False)
 
 DOXY_BRIEF = '* \\brief'
 DOXY_NOTE = '* \\note'
@@ -55,43 +73,118 @@ DOXY_AUTHOR = '* \\author'
 OPEN_COMMENT = '/**'
 CLOSE_COMMENT = '*/'
 
-alignment_star = 10
-alignment_tag = 10
-alignment_description = 10
+aligm_descr = AlligmentDescriptor(2, 12, 12)
 
-tags = [DOXY_BRIEF, DOXY_NOTE, DOXY_PARAM, DOXY_RETURN, DOXY_RETVAL, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR]
+tags = [DOXY_BRIEF, DOXY_NOTE, DOXY_PARAM, DOXY_RETURN,
+        DOXY_RETVAL, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR]
 
-def doxy_brief_handler() -> None:
-    print('DEBUG: doxy_brief_handler')
+'''
+/**
+ * \brief     Sets number of remote threads.
+ * \details   Number of remote threads that can be reserved by \ref nrf_rpc_os_remote_reserve is limited by `count` parameter. After initialization `count` is
+ *            assumed to be zero.
+ * \param[in] count - Number of remote threads.
+ * \return            None.
+ 
+/**
+ * \brief     nRF RPC OS-dependent initialization.
+ * \param[in] callback - Work callback that will be called when something was send to a thread pool.
+ * \return               0 on success or negative error code.
+ */
+'''
 
-handlers = {DOXY_BRIEF : doxy_brief_handler}
+def formatting_3_part_line(line: str) -> str:
+    buffer = line.split()
+    #print(buffer)
+    comment = buffer[2:]
+    comment = " ".join(comment)
+    print(
+        f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{comment:{aligm_descr.descr}}')
+
+    return f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{comment:{aligm_descr.descr}}'
+
+def doxy_brief_handler(line: str) -> str:
+    return formatting_3_part_line(line)
+
+
+def doxy_note_handler(line: str) -> str:
+    return formatting_3_part_line(line)
+
+
+def doxy_param_handler(line: str) -> str:
+
+    return ""
+
+
+def doxy_return_handler(line: str) -> str:
+    return formatting_3_part_line(line)
+
+
+def doxy_retval_handler(line: str) -> str:
+
+    return ""
+
+
+def doxy_details_handler(line: str) -> str:
+    return formatting_3_part_line(line)
+
+
+def doxy_file_handler(line: str) -> str:
+
+    return ""
+
+
+def doxy_author_handler(line: str) -> str:
+
+    return ""
+
+
+def open_coment_handler(line: str) -> None:
+
+    return None
+
+
+def close_comment_handler(line: str) -> None:
+
+    return None
+
+
+
+handlers = {DOXY_BRIEF: doxy_brief_handler,
+            DOXY_NOTE: doxy_note_handler,
+            DOXY_PARAM: doxy_param_handler,
+            DOXY_RETURN: doxy_return_handler,
+            DOXY_RETVAL: doxy_retval_handler,
+            DOXY_DETAILS: doxy_details_handler,
+            DOXY_FILE: doxy_file_handler,
+            DOXY_AUTHOR: doxy_author_handler,
+            OPEN_COMMENT: open_coment_handler,
+            CLOSE_COMMENT: close_comment_handler}
+
 
 def line_processing(line: str) -> Optional[str]:
     for tag in tags:
         if line.find(tag.strip()) != -1:
             return tag_processing(tag, line)
     return None
-            
+
+
 def tag_processing(tag: str, line: str) -> Optional[str]:
-    
+
+    if tag == (CLOSE_COMMENT or DOXY_FILE or DOXY_AUTHOR):
+        cmnt_descr.is_block_opened = False
+        return None
+
     if tag == OPEN_COMMENT:
+        cmnt_descr.is_block_opened = True
         return None
-    
-    if tag == CLOSE_COMMENT:
+
+    return handlers[tag](line)
+    if cmnt_descr.is_block_opened == True:
+        return handlers[tag](line)
+    else:
         return None
-    
-    if tag == DOXY_PARAM:
-        buffer = line.split()
-        print(buffer)
-        print(f'{buffer[0]:{alignment_star}}{buffer[1]:{alignment_tag}}{buffer[2]:{alignment_description}}')
-        return None
-    
-    if tag == DOXY_RETVAL:
-        return None
-    
-    if tag == DOXY_BRIEF:
-        handlers[tag]()
-        return None
+
 
 def main():
     print("run main()")
@@ -110,27 +203,17 @@ def main():
 
     with open(args.input_file, "r+") as file:
 
-        #TODO lines = [line for line in file]
+        # TODO lines = [line for line in file]
         for line in file:
-            print(line.strip())
+            #print(line.strip())
             formatted_line = line_processing(line)
             if formatted_line != None:
+                pass
                 #file.write(formatted_line)
-                print('DEBUG: NEW LINE:')
+                #print('DEBUG: NEW LINE:')
                 print(formatted_line)
 
     file.close()
-
-    file_stats = os.stat(args.input_file)
-    #print(type(stats.st_size))
-    print(hex(file_stats.st_size))
-
-    new_size = (file_stats.st_size).to_bytes(4, 'little')
-    print(hex(new_size[3]))
-    print(hex(new_size[2]))
-    print(hex(new_size[1]))
-    print(hex(new_size[0]))
-
 
 if __name__ == "__main__":
     main()
