@@ -65,8 +65,8 @@ class AlligmentDescriptorWithName(AlligmentDescriptor):
     minus: int
 
 
-aligm_descr_wo_name = AlligmentDescriptorWithoutName(2, 26, 100)
-aligm_descr_w_name = AlligmentDescriptorWithName(2, 12, 12, 12, 2)
+aligm_descr_wo_name = AlligmentDescriptorWithoutName(2, 11, 100)
+aligm_descr_w_name = AlligmentDescriptorWithName(2, 11, 9, 9, 2)
 
 cmnt_descr = CommentDescriptor(
     CommentBlockType.UNDEFINED, False)
@@ -200,9 +200,21 @@ def tag_processing(tag: str, line: str) -> Optional[str]:
         return None
 
 
+
+def change_all_files_by_mask(mask: str) -> None:
+    iter = glob(mask, recursive=True)
+    print(iter)
+    for file_path in iter:
+        print(file_path)
+        
+
+
 class Args_temp:
     input_file: str
 #args = Args_temp()
+
+def open_and_format_file(str: file_name) -> None:
+
 
 
 def main():
@@ -230,23 +242,12 @@ def main():
                     write_file.write(line)
 
     
+
+    
     #os.remove(args.input_file)
     #os.rename('temp__' + args.input_file, args.input_file)
-
+    change_all_files_by_mask('./**/*.c')
 
 if __name__ == "__main__":
     main()
 
-
-'''
-def remove_by_mask(mask: str) -> None:
-    iter = glob(mask, recursive=False)
-    print(iter)
-    for element in iter:
-        print(element)
-        os.remove(element)
-
-
-def clean_results() -> None:
-    remove_by_mask('QA*.bin')
-'''
