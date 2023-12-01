@@ -126,7 +126,7 @@ def doxy_return_handler(line: str) -> str:
 
 def doxy_retval_handler(line: str) -> str:
     buffer = line.split()
-    comment = buffer[4:]
+    #comment = buffer[4:]
     comment = buffer[3:]
     comment = " ".join(comment)
 
@@ -202,10 +202,13 @@ def tag_processing(tag: str, line: str) -> Optional[str]:
 
 
 def change_all_files_by_mask(mask: str) -> None:
-    iter = glob(mask, recursive=True)
+    iter = glob(mask, recursive=False)
     print(iter)
     for file_path in iter:
         print(file_path)
+        #file_path = file_path[2:]
+        print(file_path)
+        open_and_format_file(file_path)
         
 
 
@@ -213,24 +216,10 @@ class Args_temp:
     input_file: str
 #args = Args_temp()
 
-def open_and_format_file(str: file_name) -> None:
+def open_and_format_file(file_name : str) -> None:
 
-
-
-def main():
-    
-    parser = argparse.ArgumentParser(
-        description="Doxygen formatter.")
-    parser.add_argument(
-        "-s", "--silent", help="Enable silent mode.", action='store_true')
-    parser.add_argument("input_file", type=str,  help="Target source file.")
-
-    args = parser.parse_args()
-    
-    #args.input_file = "app_controller.c"
-
-    with open(args.input_file, "r") as read_file:
-        with open('temp__' + args.input_file, 'w+') as write_file:
+    with open(file_name, "r") as read_file:
+        with open('temp__' + file_name, 'w+') as write_file:
             lines = read_file.readlines()
 
             for line in lines:
@@ -241,12 +230,23 @@ def main():
                 else:
                     write_file.write(line)
 
-    
+    os.remove(file_name)
+    os.rename('temp__' + file_name, file_name)
 
-    
-    #os.remove(args.input_file)
-    #os.rename('temp__' + args.input_file, args.input_file)
-    change_all_files_by_mask('./**/*.c')
+def main():
+    '''
+    parser = argparse.ArgumentParser(
+        description="Doxygen formatter.")
+    parser.add_argument(
+        "-s", "--silent", help="Enable silent mode.", action='store_true')
+    parser.add_argument("input_file", type=str,  help="Target source file.")
+
+    args = parser.parse_args()
+    '''
+    #args.input_file = "app_controller.c"
+ 
+    #change_all_files_by_mask('./**/*.c')
+    change_all_files_by_mask('*.c')
 
 if __name__ == "__main__":
     main()
