@@ -1,21 +1,5 @@
 #!/usr/bin/env python3
 
-'''
-1. open file
-2. scan all strings
-3. !!! find doxygen patterns and change strings
-4. save file
-5. close file
-
-
-
-3.1 find /** string part
-3.2 detect block type 
-if block contains \file tag - it is header (skip block)
-else - format strings with tags
-3.3 if detected */ - clear block flag
-'''
-
 import argparse
 from glob import glob
 import json
@@ -27,9 +11,9 @@ import shutil
 import enum
 from dataclasses import dataclass
 from typing import Optional
-from abc import ABCMeta, abstractmethod 
+from abc import ABCMeta, abstractmethod
 
-#TODO: try to use https://pypi.org/project/transitions/ https://github.com/pytransitions/transitions
+# TODO: try to use https://pypi.org/project/transitions/ https://github.com/pytransitions/transitions
 
 class CommentBlockType(enum.Enum):
     GENERAL = 0
@@ -37,27 +21,52 @@ class CommentBlockType(enum.Enum):
     FUNCTION = 2
     UNDEFINED = 3
 
+
 @dataclass
 class CommentDescriptor:
     block_type: CommentBlockType
     is_block_opened: bool
-    #is_block_closed: bool
 
+
+    # is_block_closed: bool
+'''
 @dataclass
 class AlligmentDescriptor:
     star: int
     tag: int
     descr: int
+    param_name: int
+    retval_value: int
+    minus: int
 
+aligm_descr = AlligmentDescriptor(2, 12, 12, 12, 12, 2)
 
+    # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{comment:{aligm_descr.descr}}'
+    # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{buffer[2]:{aligm_descr.param_name}}{comment:{aligm_descr.descr}}'
+    # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{buffer[2]:{aligm_descr.retval_value}}{buffer[3]:{aligm_descr.minus}}{comment:{aligm_descr.descr}}'
 '''
-TODO: investigate function prototypes
-@abstractmethod 
-def doxy_brief_handler():
-    pass 
 
-'''
 
+@dataclass
+class AlligmentDescriptor:
+    star: int
+    tag: int
+
+
+@dataclass
+class AlligmentDescriptorWithoutName(AlligmentDescriptor):
+    descr: int #not used!
+
+
+@dataclass
+class AlligmentDescriptorWithName(AlligmentDescriptor):
+    descr: int #not used!
+    name_or_value: int
+    minus: int
+
+
+aligm_descr_wo_name = AlligmentDescriptorWithoutName(2, 26, 100)
+aligm_descr_w_name = AlligmentDescriptorWithName(2, 12, 12, 12, 2)
 
 cmnt_descr = CommentDescriptor(
     CommentBlockType.UNDEFINED, False)
@@ -73,35 +82,19 @@ DOXY_AUTHOR = '* \\author'
 OPEN_COMMENT = '/**'
 CLOSE_COMMENT = '*/'
 
-aligm_descr = AlligmentDescriptor(2, 12, 12)
-
 tags = [DOXY_BRIEF, DOXY_NOTE, DOXY_PARAM, DOXY_RETURN,
-        DOXY_RETVAL, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR]
+        DOXY_RETVAL, DOXY_DETAILS, DOXY_FILE, DOXY_AUTHOR, OPEN_COMMENT, CLOSE_COMMENT]
 
-'''
-/**
- * \brief     Sets number of remote threads.
- * \details   Number of remote threads that can be reserved by \ref nrf_rpc_os_remote_reserve is limited by `count` parameter. After initialization `count` is
- *            assumed to be zero.
- * \param[in] count - Number of remote threads.
- * \return            None.
- 
-/**
- * \brief     nRF RPC OS-dependent initialization.
- * \param[in] callback - Work callback that will be called when something was send to a thread pool.
- * \return               0 on success or negative error code.
- */
-'''
 
 def formatting_3_part_line(line: str) -> str:
     buffer = line.split()
-    #print(buffer)
     comment = buffer[2:]
     comment = " ".join(comment)
-    print(
-        f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{comment:{aligm_descr.descr}}')
 
-    return f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{comment:{aligm_descr.descr}}'
+    result = f' {buffer[0]:{aligm_descr_wo_name.star}}{buffer[1]:{aligm_descr_wo_name.tag}}{comment:{aligm_descr_wo_name.descr}}'
+    print(result)
+    return result
+
 
 def doxy_brief_handler(line: str) -> str:
     return formatting_3_part_line(line)
@@ -112,8 +105,19 @@ def doxy_note_handler(line: str) -> str:
 
 
 def doxy_param_handler(line: str) -> str:
-
-    return ""
+    result = ''
+    buffer = line.split()
+    if (len(buffer)) > 3:
+        if buffer[3] != '-':
+            buffer.insert(3, '-')
+        comment = buffer[3:]
+        comment = " ".join(comment) 
+        result = f' {buffer[0]:{aligm_descr_w_name.star}}{buffer[1]:{aligm_descr_w_name.tag}}{buffer[2]:{aligm_descr_w_name.name_or_value}}{comment:{aligm_descr_w_name.descr}}'
+        print(result)
+    else:
+        result = formatting_3_part_line(line)
+    
+    return result
 
 
 def doxy_return_handler(line: str) -> str:
@@ -121,8 +125,15 @@ def doxy_return_handler(line: str) -> str:
 
 
 def doxy_retval_handler(line: str) -> str:
+    buffer = line.split()
+    comment = buffer[4:]
+    comment = buffer[3:]
+    comment = " ".join(comment)
 
-    return ""
+    #result = f' {buffer[0]:{aligm_descr_w_name.star}}{buffer[1]:{aligm_descr_w_name.tag}}{buffer[2]:{aligm_descr_w_name.name_or_value}}{buffer[3]:{aligm_descr_w_name.minus}}{comment:{aligm_descr_w_name.descr}}'
+    result = f' {buffer[0]:{aligm_descr_w_name.star}}{buffer[1]:{aligm_descr_w_name.tag}}{buffer[2]:{aligm_descr_w_name.name_or_value}}{comment:{aligm_descr_w_name.descr}}'
+    print(result)
+    return result
 
 
 def doxy_details_handler(line: str) -> str:
@@ -130,24 +141,19 @@ def doxy_details_handler(line: str) -> str:
 
 
 def doxy_file_handler(line: str) -> str:
-
-    return ""
+    return line
 
 
 def doxy_author_handler(line: str) -> str:
-
-    return ""
+    return line
 
 
 def open_coment_handler(line: str) -> None:
-
     return None
 
 
 def close_comment_handler(line: str) -> None:
-
     return None
-
 
 
 handlers = {DOXY_BRIEF: doxy_brief_handler,
@@ -171,7 +177,15 @@ def line_processing(line: str) -> Optional[str]:
 
 def tag_processing(tag: str, line: str) -> Optional[str]:
 
-    if tag == (CLOSE_COMMENT or DOXY_FILE or DOXY_AUTHOR):
+    if tag == CLOSE_COMMENT:
+        cmnt_descr.is_block_opened = False
+        return None
+
+    if tag == DOXY_FILE:
+        cmnt_descr.is_block_opened = False
+        return None
+
+    if tag == DOXY_AUTHOR:
         cmnt_descr.is_block_opened = False
         return None
 
@@ -179,41 +193,60 @@ def tag_processing(tag: str, line: str) -> Optional[str]:
         cmnt_descr.is_block_opened = True
         return None
 
-    return handlers[tag](line)
+    # return handlers[tag](line)
     if cmnt_descr.is_block_opened == True:
         return handlers[tag](line)
     else:
         return None
 
 
-def main():
-    print("run main()")
+class Args_temp:
+    input_file: str
+#args = Args_temp()
 
+
+def main():
+    
     parser = argparse.ArgumentParser(
         description="Doxygen formatter.")
     parser.add_argument(
         "-s", "--silent", help="Enable silent mode.", action='store_true')
-    parser.add_argument("-od", "--output_dir", type=str,
-                        default="output", help="Output directory.")
-    parser.add_argument("-bt", "--build_type", type=str,
-                        default="C", help="Type of the build.")
     parser.add_argument("input_file", type=str,  help="Target source file.")
 
     args = parser.parse_args()
+    
+    #args.input_file = "app_controller.c"
 
-    with open(args.input_file, "r+") as file:
+    with open(args.input_file, "r") as read_file:
+        with open('temp__' + args.input_file, 'w+') as write_file:
+            lines = read_file.readlines()
 
-        # TODO lines = [line for line in file]
-        for line in file:
-            #print(line.strip())
-            formatted_line = line_processing(line)
-            if formatted_line != None:
-                pass
-                #file.write(formatted_line)
-                #print('DEBUG: NEW LINE:')
-                print(formatted_line)
+            for line in lines:
+                # print(line.strip())
+                formatted_line = line_processing(line)
+                if formatted_line != None:
+                    write_file.write(formatted_line+"\n")
+                else:
+                    write_file.write(line)
 
-    file.close()
+    
+    #os.remove(args.input_file)
+    #os.rename('temp__' + args.input_file, args.input_file)
+
 
 if __name__ == "__main__":
     main()
+
+
+'''
+def remove_by_mask(mask: str) -> None:
+    iter = glob(mask, recursive=False)
+    print(iter)
+    for element in iter:
+        print(element)
+        os.remove(element)
+
+
+def clean_results() -> None:
+    remove_by_mask('QA*.bin')
+'''
