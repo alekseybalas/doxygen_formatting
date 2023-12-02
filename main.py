@@ -21,11 +21,18 @@ class CommentBlockType(enum.Enum):
     FUNCTION = 2
     UNDEFINED = 3
 
+@dataclass
+class Comment
+
+
 
 @dataclass
 class CommentDescriptor:
     block_type: CommentBlockType
-    is_block_opened: bool
+    is_block_opened: bool 
+    max_tag_len: int
+    max_variable_len: int
+    block_len: int
 
 
     # is_block_closed: bool
@@ -44,8 +51,8 @@ aligm_descr = AlligmentDescriptor(2, 12, 12, 12, 12, 2)
     # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{comment:{aligm_descr.descr}}'
     # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{buffer[2]:{aligm_descr.param_name}}{comment:{aligm_descr.descr}}'
     # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{buffer[2]:{aligm_descr.retval_value}}{buffer[3]:{aligm_descr.minus}}{comment:{aligm_descr.descr}}'
-'''
 
+'''
 
 @dataclass
 class AlligmentDescriptor:
@@ -69,7 +76,7 @@ aligm_descr_wo_name = AlligmentDescriptorWithoutName(2, 11, 100)
 aligm_descr_w_name = AlligmentDescriptorWithName(2, 11, 9, 9, 2)
 
 cmnt_descr = CommentDescriptor(
-    CommentBlockType.UNDEFINED, False)
+    CommentBlockType.UNDEFINED, False, 0, 0, 0)
 
 DOXY_BRIEF = '* \\brief'
 DOXY_NOTE = '* \\note'
@@ -209,7 +216,21 @@ def change_all_files_by_mask(mask: str) -> None:
         #file_path = file_path[2:]
         print(file_path)
         open_and_format_file(file_path)
-        
+
+class BlockState(enum.Enum):
+    READY = 0
+    NOT_READY = 1
+    FAILURE = 2
+    UNDEFINED = 3
+
+@dataclass
+class FormattedBlock():
+    block_state: BlockState
+    data: list[str]
+
+def block_processing(line: str) -> Optional[FormattedBlock]:
+    return None
+    return ['df','fd']
 
 
 class Args_temp:
@@ -224,14 +245,22 @@ def open_and_format_file(file_name : str) -> None:
 
             for line in lines:
                 # print(line.strip())
-                formatted_line = line_processing(line)
-                if formatted_line != None:
-                    write_file.write(formatted_line+"\n")
+                formatted_block = block_processing(line)
+                if formatted_block != None:
+                    if formatted_block.block_state == BlockState.NOT_READY:
+                        continue
+                    if formatted_block.block_state == BlockState.READY:
+                        for line in formatted_block.data:
+                            write_file.write(line+"\n")
+                    if formatted_block.block_state == BlockState.FAILURE:
+                        print("PARSING ERROR")
+                    if formatted_block.block_state == BlockState.UNDEFINED:
+                        print("STUB")
                 else:
                     write_file.write(line)
 
-    os.remove(file_name)
-    os.rename('temp__' + file_name, file_name)
+    #os.remove(file_name)
+    #os.rename('temp__' + file_name, file_name)
 
 def main():
     '''
