@@ -22,37 +22,12 @@ class CommentBlockType(enum.Enum):
     UNDEFINED = 3
 
 @dataclass
-class Comment
-
-
-
-@dataclass
 class CommentDescriptor:
     block_type: CommentBlockType
     is_block_opened: bool 
     max_tag_len: int
     max_variable_len: int
     block_len: int
-
-
-    # is_block_closed: bool
-'''
-@dataclass
-class AlligmentDescriptor:
-    star: int
-    tag: int
-    descr: int
-    param_name: int
-    retval_value: int
-    minus: int
-
-aligm_descr = AlligmentDescriptor(2, 12, 12, 12, 12, 2)
-
-    # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{comment:{aligm_descr.descr}}'
-    # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{buffer[2]:{aligm_descr.param_name}}{comment:{aligm_descr.descr}}'
-    # result = f' {buffer[0]:{aligm_descr.star}}{buffer[1]:{aligm_descr.tag}}{buffer[2]:{aligm_descr.retval_value}}{buffer[3]:{aligm_descr.minus}}{comment:{aligm_descr.descr}}'
-
-'''
 
 @dataclass
 class AlligmentDescriptor:
@@ -75,7 +50,7 @@ class AlligmentDescriptorWithName(AlligmentDescriptor):
 aligm_descr_wo_name = AlligmentDescriptorWithoutName(2, 11, 100)
 aligm_descr_w_name = AlligmentDescriptorWithName(2, 11, 9, 9, 2)
 
-cmnt_descr = CommentDescriptor(
+comment_descr = CommentDescriptor(
     CommentBlockType.UNDEFINED, False, 0, 0, 0)
 
 DOXY_BRIEF = '* \\brief'
@@ -163,6 +138,39 @@ def close_comment_handler(line: str) -> None:
     return None
 
 
+def brief_handler(line: str) -> str:
+    return line
+def note_handler(line: str) -> str:
+    return line
+def param_handler(line: str) -> str:
+    return line
+def return_handler(line: str) -> str:
+    return line
+def retval_handler(line: str) -> str:
+    return line
+def details_handler(line: str) -> str:
+    return line
+def file_handler(line: str) -> str:
+    return line
+def author_handler(line: str) -> str:
+    return line
+def coment_handler(line: str) -> str:
+    return line
+
+
+
+handlers2 = {DOXY_BRIEF: brief_handler,
+            DOXY_NOTE: note_handler,
+            DOXY_PARAM: param_handler,
+            DOXY_RETURN: return_handler,
+            DOXY_RETVAL: retval_handler,
+            DOXY_DETAILS: details_handler,
+            DOXY_FILE: file_handler,
+            DOXY_AUTHOR: author_handler,
+            OPEN_COMMENT: coment_handler,
+            CLOSE_COMMENT: comment_handler}
+
+
 handlers = {DOXY_BRIEF: doxy_brief_handler,
             DOXY_NOTE: doxy_note_handler,
             DOXY_PARAM: doxy_param_handler,
@@ -173,39 +181,6 @@ handlers = {DOXY_BRIEF: doxy_brief_handler,
             DOXY_AUTHOR: doxy_author_handler,
             OPEN_COMMENT: open_coment_handler,
             CLOSE_COMMENT: close_comment_handler}
-
-
-def line_processing(line: str) -> Optional[str]:
-    for tag in tags:
-        if line.find(tag.strip()) != -1:
-            return tag_processing(tag, line)
-    return None
-
-
-def tag_processing(tag: str, line: str) -> Optional[str]:
-
-    if tag == CLOSE_COMMENT:
-        cmnt_descr.is_block_opened = False
-        return None
-
-    if tag == DOXY_FILE:
-        cmnt_descr.is_block_opened = False
-        return None
-
-    if tag == DOXY_AUTHOR:
-        cmnt_descr.is_block_opened = False
-        return None
-
-    if tag == OPEN_COMMENT:
-        cmnt_descr.is_block_opened = True
-        return None
-
-    # return handlers[tag](line)
-    if cmnt_descr.is_block_opened == True:
-        return handlers[tag](line)
-    else:
-        return None
-
 
 
 def change_all_files_by_mask(mask: str) -> None:
@@ -228,14 +203,57 @@ class FormattedBlock():
     block_state: BlockState
     data: list[str]
 
+raw_block: list[str]
+raw_block = []
+
+def reformat_block(line: str) -> Optional[FormattedBlock]:
+    for line in raw_block:
+         for tag in tags:
+            handlers2[tag](line)
+    raw_block.clear()
+    FormattedBlock(BlockState.READY, [])
+
+def init_block(line: str) -> Optional[FormattedBlock]:
+    comment_descr.block_len = 1
+    comment_descr.block_type = CommentBlockType.UNDEFINED
+    comment_descr.is_block_opened = True
+    comment_descr.max_tag_len = 0
+    comment_descr.max_variable_len = 0
+    return FormattedBlock(BlockState.NOT_READY, [])
+
 def block_processing(line: str) -> Optional[FormattedBlock]:
-    return None
-    return ['df','fd']
+    for tag in tags:
+        if line.find(tag) != -1:
+            if (tag != OPEN_COMMENT) and (comment_descr.is_block_opened == False):
+                return None
+            if (tag == OPEN_COMMENT) and (comment_descr.is_block_opened == True):
+                return FormattedBlock(BlockState.FAILURE, [])
+            #if (tag == OPEN_COMMENT) and (comment_descr.is_block_opened == False):
+                #open desc
+            #if (tag != OPEN_COMMENT) and (comment_descr.is_block_opened == True):
+                #processing
+            
+            raw_block.append(line)
 
+            if tag == CLOSE_COMMENT:
+                #now it needs to return block
+                return reformat_block(line)
 
-class Args_temp:
-    input_file: str
-#args = Args_temp()
+            if tag == OPEN_COMMENT:
+                comment_descr.is_block_opened = True
+                #now it needs to reinit block
+                return init_block(line)
+
+            if comment_descr.is_block_opened == True:
+                handlers[tag](line)
+                return FormattedBlock(BlockState.NOT_READY, [])
+                
+            #else:
+                #return None
+    if comment_descr.is_block_opened == True:
+        raw_block.append(line)        
+    else:
+        return None   
 
 def open_and_format_file(file_name : str) -> None:
 
@@ -252,15 +270,22 @@ def open_and_format_file(file_name : str) -> None:
                     if formatted_block.block_state == BlockState.READY:
                         for line in formatted_block.data:
                             write_file.write(line+"\n")
+                        continue
                     if formatted_block.block_state == BlockState.FAILURE:
                         print("PARSING ERROR")
+                        exit()
                     if formatted_block.block_state == BlockState.UNDEFINED:
                         print("STUB")
+                        continue
                 else:
                     write_file.write(line)
 
     #os.remove(file_name)
     #os.rename('temp__' + file_name, file_name)
+
+class Args_temp:
+    input_file: str
+#args = Args_temp()
 
 def main():
     '''
